@@ -5,7 +5,8 @@
   "description": "A professional accessibility tool to check colour contrast ratios in a side panel.",
   "permissions": ["sidePanel"],
   "action": {
-    "default_title": "WCAG Colour Contrast Checker by Eleven Ways"
+    "default_title": "WCAG Colour Contrast Checker by Eleven Ways",
+    "default_popup": "popup.html"
   },
   "side_panel": {
     "default_path": "popup.html"

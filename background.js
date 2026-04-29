@@ -1,9 +1,11 @@
-// This script allows the side panel to open when the user clicks the extension icon
-chrome.sidePanel
-  .setPanelBehavior({ openPanelOnActionClick: true })
-  .catch((error) => console.error(error));
+// Reset any previously cached sidePanel behavior so default_popup works.
+// This fixes Arc where setPanelBehavior persists but sidePanel doesn't render.
+if (chrome.sidePanel?.setPanelBehavior) {
+  chrome.sidePanel
+    .setPanelBehavior({ openPanelOnActionClick: false })
+    .catch(() => {});
+}
 
-// Optional: Open side panel automatically on specific sites or when installed
 chrome.runtime.onInstalled.addListener(() => {
   console.log("Colour Contrast Checker Pro installed.");
 });
