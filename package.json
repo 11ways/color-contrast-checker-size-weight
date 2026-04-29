@@ -1,0 +1,28 @@
+{
+  "name": "color-contrast-checker-size-weight",
+  "version": "1.0.0",
+  "description": "Color Contrast Checker - Chrome Extension A simple but powerful  tool to check color contrast ratios against WCAG AA accessibility standards. This extension provides direct Fail/Pass feedback based on the text font size and weight, and suggests compliant font size/weight, or color alternatives to help you build more accessible websites.",
+  "main": "background.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/11ways/color-contrast-checker-size-weight.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/11ways/color-contrast-checker-size-weight/issues"
+  },
+  "homepage": "https://github.com/11ways/color-contrast-checker-size-weight#readme",
+  "devDependencies": {
+    "eslint": "^10.2.1"
+  }
+}

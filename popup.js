@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const successMessage = document.getElementById('success-message');
     const suggestionsContainer = document.querySelector('.suggestions-container');
     const suggestionsList = document.getElementById('suggestions-list');
-    const historySection = document.getElementById('history-section');
     const historyList = document.getElementById('history-list');
     const clearHistoryBtn = document.getElementById('clear-history-btn');
     const unitToggleBtn = document.getElementById('unit-toggle-btn');
@@ -34,7 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* --- AUDIO FEEDBACK --- */
     let audioCtx = null;
-    const initAudio = () => { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); };
+
+    const initAudio = () => {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+    };
+
     const playTone = (freq, type = 'sine', duration = 0.1, volume = 0.05) => {
         if (!soundEnabled) return;
         initAudio();
@@ -44,11 +52,20 @@ document.addEventListener('DOMContentLoaded', () => {
         osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
         gain.gain.setValueAtTime(volume, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.start(); osc.stop(audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
     };
-    const playPassSound = () => { playTone(660, 'sine', 0.15); setTimeout(() => playTone(880, 'sine', 0.15), 100); };
-    const playFailSound = () => { playTone(330, 'square', 0.2, 0.03); };
+
+    const playPassSound = () => {
+        playTone(660, 'sine', 0.15);
+        setTimeout(() => playTone(880, 'sine', 0.15), 100);
+    };
+
+    const playFailSound = () => {
+        playTone(330, 'square', 0.2, 0.03);
+    };
 
     /* --- TOOLTIP ESC LOGIC --- */
     document.addEventListener('keydown', (e) => {
@@ -69,29 +86,50 @@ document.addEventListener('DOMContentLoaded', () => {
     /* --- HELPERS --- */
     const hexToRgb = (hex) => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-        return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+        if (!result) return null;
+        return {
+            r: parseInt(result[1], 16),
+            g: parseInt(result[2], 16),
+            b: parseInt(result[3], 16)
+        };
     };
+
     const rgbToHex = (rgb) => {
         const toH = (v) => Math.round(v).toString(16).padStart(2, '0');
         let hex = "#" + toH(rgb.r) + toH(rgb.g) + toH(rgb.b);
-        if (rgb.a !== undefined && rgb.a < 1) hex += toH(Math.round(rgb.a * 255));
+        if (rgb.a !== undefined && rgb.a < 1) {
+            hex += toH(Math.round(rgb.a * 255));
+        }
         return hex;
     };
     const getFullFgRgb = () => {
         const rgb = hexToRgb(fgPicker.value);
-        let a = fgAlpha.value === "" ? 100 : parseInt(fgAlpha.value);
+        const a = fgAlpha.value === "" ? 100 : parseInt(fgAlpha.value);
         return { ...rgb, a: Math.max(0, Math.min(100, a)) / 100 };
     };
     const formatColor = (rgbObj, format) => {
         const a = rgbObj.a !== undefined ? rgbObj.a : 1.0;
-        if (format === 'rgb') return a < 1 ? `rgba(${rgbObj.r}, ${rgbObj.g}, ${rgbObj.b}, ${a.toFixed(2)})` : `rgb(${rgbObj.r}, ${rgbObj.g}, ${rgbObj.b})`;
+
+        if (format === 'rgb') {
+            if (a < 1) {
+                return `rgba(${rgbObj.r}, ${rgbObj.g}, ${rgbObj.b}, ${a.toFixed(2)})`;
+            }
+            return `rgb(${rgbObj.r}, ${rgbObj.g}, ${rgbObj.b})`;
+        }
+
         if (format === 'hsl') {
             const { h, s, l } = rgbToHsl(rgbObj);
-            const hh = Math.round(h * 360), ss = Math.round(s * 100), ll = Math.round(l * 100);
-            return a < 1 ? `hsla(${hh}, ${ss}%, ${ll}%, ${a.toFixed(2)})` : `hsl(${hh}, ${ss}%, ${ll}%)`;
+            const hh = Math.round(h * 360);
+            const ss = Math.round(s * 100);
+            const ll = Math.round(l * 100);
+            if (a < 1) {
+                return `hsla(${hh}, ${ss}%, ${ll}%, ${a.toFixed(2)})`;
+            }
+            return `hsl(${hh}, ${ss}%, ${ll}%)`;
         }
+
         const toH = (v) => Math.round(v).toString(16).padStart(2, '0');
-        let hex = "#" + toH(rgbObj.r) + toH(rgbObj.g) + toH(rgbObj.b);
+        const hex = "#" + toH(rgbObj.r) + toH(rgbObj.g) + toH(rgbObj.b);
         if (a < 1) return `${hex} ${Math.round(a * 100)}%`;
         return hex;
     };
@@ -144,11 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
             swatch.tabIndex = 0;
             swatch.role = "button";
             
-            const fgFlat = {
-                r: Math.round(item.fg.a * item.fg.r + (1 - item.fg.a) * item.bg.r),
-                g: Math.round(item.fg.a * item.fg.g + (1 - item.fg.a) * item.bg.g),
-                b: Math.round(item.fg.a * item.fg.b + (1 - item.fg.a) * item.bg.b)
-            };
+            const fgFlat = alphaBlend(item.fg, item.bg, item.fg.a);
 
             swatch.style.backgroundColor = rgbToHex(item.bg);
             swatch.style.color = rgbToHex(fgFlat);
@@ -167,18 +201,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             swatch.onclick = () => {
                 const combined = `${fgStr} on ${bgStr}`;
-                const ta = document.createElement("textarea"); 
-                ta.value = combined; ta.style.position = "fixed"; ta.style.left = "-9999px";
-                document.body.appendChild(ta); ta.select(); 
+                const ta = document.createElement("textarea");
+                ta.value = combined;
+                ta.style.position = "fixed";
+                ta.style.left = "-9999px";
+                document.body.appendChild(ta);
+                ta.select();
                 document.execCommand('copy');
                 document.body.removeChild(ta);
-                
+
                 const originalContent = swatch.innerHTML;
                 swatch.innerHTML = '<i class="fa-solid fa-copy"></i>';
                 setTimeout(() => { swatch.innerHTML = originalContent; }, 1000);
             };
 
-            swatch.onkeydown = (e) => { if (e.key === 'Enter') swatch.click(); };
+            swatch.onkeydown = (e) => {
+                if (e.key === 'Enter') swatch.click();
+            };
             historyList.appendChild(swatch);
         });
     }
@@ -216,21 +255,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     noTextCheckbox.addEventListener('change', (e) => {
         const isNoText = e.target.checked;
-        fontSizeSelect.disabled = fontWeightSelect.disabled = isNoText;
+        fontSizeSelect.disabled = isNoText;
+        fontWeightSelect.disabled = isNoText;
         document.querySelectorAll('input[name="font-size-unit"]').forEach(r => r.disabled = isNoText);
-        if (isNoText) unitGroup.classList.add('disabled');
-        else unitGroup.classList.remove('disabled');
+        unitGroup.classList.toggle('disabled', isNoText);
         triggerCheck(false);
     });
 
     const copyToClipboard = (btn, text) => {
-        const ta = document.createElement("textarea"); 
-        ta.value = text; ta.style.position = "fixed"; ta.style.left = "-9999px";
-        document.body.appendChild(ta); ta.select(); 
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
         document.execCommand('copy');
-        const icon = btn.querySelector('i');
-        if (icon) { icon.className = 'fa-solid fa-check'; setTimeout(() => { icon.className = 'fa-solid fa-copy'; }, 1500); }
         document.body.removeChild(ta);
+
+        const icon = btn.querySelector('i');
+        if (icon) {
+            icon.className = 'fa-solid fa-check';
+            setTimeout(() => { icon.className = 'fa-solid fa-copy'; }, 1500);
+        }
     };
 
     fgCopyBtn.addEventListener('click', (e) => copyToClipboard(e.currentTarget, formatColor(getFullFgRgb(), units[currentUnitIndex])));
@@ -241,11 +287,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const unit = unitEl ? unitEl.value : 'px';
         const prevIdx = fontSizeSelect.selectedIndex >= 0 ? fontSizeSelect.selectedIndex : 0;
         fontSizeSelect.innerHTML = '';
-        let opts = unit === 'pt' ? 
-            [{ v: 12, t: 'Less than 14' }, { v: 14, t: '14 to 17.99' }, { v: 18, t: '18 or more' }] :
-            [{ v: 16, t: 'Less than 18.5' }, { v: 18.5, t: '18.5 to 23.99' }, { v: 24, t: '24 or more' }];
+        const opts = unit === 'pt'
+            ? [{ v: 12, t: 'Less than 14' }, { v: 14, t: '14 to 17.99' }, { v: 18, t: '18 or more' }]
+            : [{ v: 16, t: 'Less than 18.5' }, { v: 18.5, t: '18.5 to 23.99' }, { v: 24, t: '24 or more' }];
+
         opts.forEach(opt => {
-            const o = document.createElement('option'); o.value = opt.v; o.textContent = opt.t; fontSizeSelect.appendChild(o);
+            const o = document.createElement('option');
+            o.value = opt.v;
+            o.textContent = opt.t;
+            fontSizeSelect.appendChild(o);
         });
         fontSizeSelect.selectedIndex = prevIdx;
     }
@@ -278,24 +328,28 @@ document.addEventListener('DOMContentLoaded', () => {
         bgCopyBtn.setAttribute('data-tooltip', "Copy " + bgDisplayColor);
         bgCopyBtn.setAttribute('aria-label', "Copy " + bgDisplayColor);
 
-        const fgFlat = {
-            r: Math.round(fgRaw.a * fgRaw.r + (1 - fgRaw.a) * bgRgb.r),
-            g: Math.round(fgRaw.a * fgRaw.g + (1 - fgRaw.a) * bgRgb.g),
-            b: Math.round(fgRaw.a * fgRaw.b + (1 - fgRaw.a) * bgRgb.b)
-        };
+        const fgFlat = alphaBlend(fgRaw, bgRgb, fgRaw.a);
 
         const ratio = getContrastRatio(fgFlat, bgRgb);
         contrastRatioSpan.textContent = ratio.toFixed(2);
 
-        let needed = 4.5, isLarge = false;
-        if (!isNonText) {
+        let needed = 4.5;
+        let isLarge = false;
+
+        if (isNonText) {
+            needed = 3.0;
+        } else {
             const fs = parseFloat(fontSizeSelect.value);
             const unit = document.querySelector('input[name="font-size-unit"]:checked').value;
             const weight = parseInt(fontWeightSelect.value, 10);
-            if (unit === 'pt') isLarge = (fs >= 18) || (fs >= 14 && weight >= 700);
-            else isLarge = (fs >= 24) || (fs >= 18.5 && weight >= 700);
+
+            if (unit === 'pt') {
+                isLarge = (fs >= 18) || (fs >= 14 && weight >= 700);
+            } else {
+                isLarge = (fs >= 24) || (fs >= 18.5 && weight >= 700);
+            }
             needed = isLarge ? 3.0 : 4.5;
-        } else { needed = 3.0; }
+        }
 
         const passes = ratio >= needed;
         const isPartial = !isNonText && ratio >= 3.0 && ratio < 4.5;
@@ -373,21 +427,33 @@ document.addEventListener('DOMContentLoaded', () => {
         const currentFrontAlphaValidHex = rgbToHex(fgRaw); 
         
         let count = 0;
-        const addS = (html) => { const d = document.createElement('div'); d.className = 'suggestion'; d.innerHTML = html; suggestionsList.appendChild(d); count++; return d; };
+
+        const addSuggestion = (html) => {
+            const div = document.createElement('div');
+            div.className = 'suggestion';
+            div.innerHTML = html;
+            suggestionsList.appendChild(div);
+            count++;
+            return div;
+        };
 
         const getBadgeHTML = (isPass, fg, bg, isEnlarged = false) => {
-            const bS = getBadgeStyles(isEnlarged);
-            if (isNonText) return `<i class="fa-solid fa-${isPass ? 'check' : 'xmark'}" style="font-size:${bS.size}; line-height:1;"></i>`;
-            return `<span style="font-size:${bS.size}; font-weight:${bS.weight}; line-height:1;">${isPass ? 'PASS' : 'FAIL'}</span>`;
+            const styles = getBadgeStyles(isEnlarged);
+            if (isNonText) {
+                const icon = isPass ? 'check' : 'xmark';
+                return `<i class="fa-solid fa-${icon}" style="font-size:${styles.size}; line-height:1;"></i>`;
+            }
+            const label = isPass ? 'PASS' : 'FAIL';
+            return `<span style="font-size:${styles.size}; font-weight:${styles.weight}; line-height:1;">${label}</span>`;
         };
 
         if (!isNonText && currentRatio >= 3.0 && currentRatio < 4.5) {
-            addS(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${currentBgHex}; padding: 0;"><i class="fa-solid fa-check" style="font-size:16px;"></i></div>
+            addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${currentBgHex}; padding: 0;"><i class="fa-solid fa-check" style="font-size:16px;"></i></div>
                   <div style="flex-grow:1;"><div style="color:var(--text-secondary); font-weight:500;">Use this colour combination only for <b>graphics and User Interface components</b>, not for text on background.</div></div>`);
         }
 
         if (!isNonText && !isLarge && currentRatio >= 3.0) {
-            addS(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${currentBgHex}; padding: 0;">${getBadgeHTML(true, currentFrontAlphaValidHex, currentBgHex, true)}</div>
+            addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${currentBgHex}; padding: 0;">${getBadgeHTML(true, currentFrontAlphaValidHex, currentBgHex, true)}</div>
                   <div style="flex-grow:1;"><div style="color:var(--text-secondary); font-weight:500;">Enlarge text: min 18.5px bold or 24px regular.</div>
                   <div style="font-size:12px; color:var(--text-secondary);">Ratio: ${currentRatio.toFixed(2)} with Background ${currentBgActive}</div></div>`);
         }
@@ -408,7 +474,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (pA) {
                 const colorObj = { ...fgRaw, a: pA };
                 const colorStr = formatColor(colorObj, activeUnit);
-                const el = addS(`<div class="status" style="color:${rgbToHex(colorObj)}; background-color:${currentBgHex};">${getBadgeHTML(true)}</div>
+                const el = addSuggestion(`<div class="status" style="color:${rgbToHex(colorObj)}; background-color:${currentBgHex};">${getBadgeHTML(true)}</div>
                     <div style="flex-grow:1; display:flex; flex-direction:column;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
                             <span style="color:var(--text-secondary);">Set <b>Front opacity</b> to <b style="font-family:monospace;">${Math.round(pA * 100)}%</b></span>
@@ -427,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sFg) {
             const colorObj = { ...sFg.rgb, a: fgRaw.a };
             const colorStr = formatColor(colorObj, activeUnit);
-            const el = addS(`<div class="status" style="color:${rgbToHex(colorObj)}; background-color:${currentBgHex};">${getBadgeHTML(true)}</div>
+            const el = addSuggestion(`<div class="status" style="color:${rgbToHex(colorObj)}; background-color:${currentBgHex};">${getBadgeHTML(true)}</div>
                 <div style="flex-grow:1; display:flex; flex-direction:column;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="color:var(--text-secondary);">Replace <b>Front</b> with <b style="font-family:monospace;">${colorStr}</b></span>
@@ -444,7 +510,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const sBg = findPassingBgColor(fgRaw, bgRgb, fgRaw.a, needed);
         if (sBg) {
             const colorStr = formatColor(sBg.rgb, activeUnit);
-            const el = addS(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${rgbToHex(sBg.rgb)};">${getBadgeHTML(true)}</div>
+            const el = addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${rgbToHex(sBg.rgb)};">${getBadgeHTML(true)}</div>
                 <div style="flex-grow:1; display:flex; flex-direction:column;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
                         <span style="color:var(--text-secondary);">Replace <b>Background</b> with <b style="font-family:monospace;">${colorStr}</b></span>
@@ -459,20 +525,126 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (count === 0) {
-            const info = document.createElement('div'); info.className = 'no-suggestions-message';
+            const info = document.createElement('div');
+            info.className = 'no-suggestions-message';
             info.innerHTML = `No simple adjustments found. Try picking a significantly different color.`;
             suggestionsList.appendChild(info);
         }
     }
 
     /* --- MATH CORE --- */
-    function getLuminance(rgb) { const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(c => { c /= 255; return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }); return 0.2126 * r + 0.7152 * g + 0.0722 * b; }
-    function getContrastRatio(rgb1, rgb2) { const l1 = getLuminance(rgb1), l2 = getLuminance(rgb2); return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05); }
-    function rgbToHsl(rgb) { let r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255, max = Math.max(r, g, b), min = Math.min(r, g, b), h, s, l = (max + min) / 2; if (max === min) h = s = 0; else { const d = max - min; s = l > 0.5 ? d / (2 - max - min) : d / (max + min); if (max === r) h = (g - b) / d + (g < b ? 6 : 0); else if (max === g) h = (b - r) / d + 2; else h = (r - g) / d + 4; h /= 6; } return { h, s, l }; }
-    function hslToRgb(hsl) { let h = hsl.h, s = hsl.s, l = hsl.l, r, g, b; if (s === 0) r = g = b = l; else { const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q; const h2r = (p, q, t) => { if (t < 0) t += 1; if (t > 1) t -= 1; if (t < 1/6) return p + (q - p) * 6 * t; if (t < 1/2) return q; if (t < 2/3) return p + (q - p) * (2/3 - t) * 6; return p; }; r = h2r(p, q, h + 1/3); g = h2r(p, q, h); b = h2r(p, q, h - 1/3); } return { r: Math.round(r * 255), g: Math.round(g * 255), b: Math.round(b * 255) }; }
-    function findPassingFgColor(fg, bg, a, req) { const hsl = rgbToHsl(fg), dir = getLuminance(bg) > 0.5 ? -1 : 1; for (let i = 0; i <= 100; i++) { const l = Math.max(0, Math.min(1, hsl.l + (i * 0.01 * dir))); const cand = hslToRgb({ ...hsl, l }); const bl = { r: Math.round(a * cand.r + (1-a)*bg.r), g: Math.round(a * cand.g + (1-a)*bg.g), b: Math.round(a * cand.b + (1-a)*bg.b) }; const ratio = getContrastRatio(bl, bg); if (ratio >= req) return { rgb: cand, ratio }; } return null; }
-    function findPassingBgColor(fg, bg, a, req) { const hsl = rgbToHsl(bg), dir = getLuminance(fg) > 0.5 ? -1 : 1; for (let i = 0; i <= 100; i++) { const l = Math.max(0, Math.min(1, hsl.l + (i * 0.01 * dir))); const cand = hslToRgb({ ...hsl, l }); const bl = { r: Math.round(a * fg.r + (1-a)*cand.r), g: Math.round(a * fg.g + (1-a)*cand.g), b: Math.round(a * fg.b + (1-a)*cand.b) }; const ratio = getContrastRatio(bl, cand); if (ratio >= req) return { rgb: cand, ratio }; } return null; }
-    function findPassingAlpha(fg, bg, req) { for (let a = 0.01; a <= 1.0; a += 0.01) { const bl = { r: Math.round(a * fg.r + (1-a)*bg.r), g: Math.round(a * fg.g + (1-a)*bg.g), b: Math.round(a * fg.b + (1-a)*bg.b) }; if (getContrastRatio(bl, bg) >= req) return parseFloat(a.toFixed(2)); } return null; }
+
+    function getLuminance(rgb) {
+        const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(c => {
+            c /= 255;
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    }
+
+    function getContrastRatio(rgb1, rgb2) {
+        const l1 = getLuminance(rgb1);
+        const l2 = getLuminance(rgb2);
+        return (Math.max(l1, l2) + 0.05) / (Math.min(l1, l2) + 0.05);
+    }
+
+    function rgbToHsl(rgb) {
+        const r = rgb.r / 255;
+        const g = rgb.g / 255;
+        const b = rgb.b / 255;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const l = (max + min) / 2;
+        let h, s;
+
+        if (max === min) {
+            h = s = 0;
+        } else {
+            const d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+            else if (max === g) h = (b - r) / d + 2;
+            else h = (r - g) / d + 4;
+            h /= 6;
+        }
+
+        return { h, s, l };
+    }
+
+    function hslToRgb(hsl) {
+        const { h, s, l } = hsl;
+        let r, g, b;
+
+        if (s === 0) {
+            r = g = b = l;
+        } else {
+            const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+            const p = 2 * l - q;
+            const hueToRgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1 / 6) return p + (q - p) * 6 * t;
+                if (t < 1 / 2) return q;
+                if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                return p;
+            };
+            r = hueToRgb(p, q, h + 1 / 3);
+            g = hueToRgb(p, q, h);
+            b = hueToRgb(p, q, h - 1 / 3);
+        }
+
+        return {
+            r: Math.round(r * 255),
+            g: Math.round(g * 255),
+            b: Math.round(b * 255)
+        };
+    }
+
+    function alphaBlend(fg, bg, a) {
+        return {
+            r: Math.round(a * fg.r + (1 - a) * bg.r),
+            g: Math.round(a * fg.g + (1 - a) * bg.g),
+            b: Math.round(a * fg.b + (1 - a) * bg.b)
+        };
+    }
+
+    function findPassingFgColor(fg, bg, a, req) {
+        const hsl = rgbToHsl(fg);
+        const dir = getLuminance(bg) > 0.5 ? -1 : 1;
+
+        for (let i = 0; i <= 100; i++) {
+            const l = Math.max(0, Math.min(1, hsl.l + (i * 0.01 * dir)));
+            const cand = hslToRgb({ ...hsl, l });
+            const blended = alphaBlend(cand, bg, a);
+            const ratio = getContrastRatio(blended, bg);
+            if (ratio >= req) return { rgb: cand, ratio };
+        }
+        return null;
+    }
+
+    function findPassingBgColor(fg, bg, a, req) {
+        const hsl = rgbToHsl(bg);
+        const dir = getLuminance(fg) > 0.5 ? -1 : 1;
+
+        for (let i = 0; i <= 100; i++) {
+            const l = Math.max(0, Math.min(1, hsl.l + (i * 0.01 * dir)));
+            const cand = hslToRgb({ ...hsl, l });
+            const blended = alphaBlend(fg, cand, a);
+            const ratio = getContrastRatio(blended, cand);
+            if (ratio >= req) return { rgb: cand, ratio };
+        }
+        return null;
+    }
+
+    function findPassingAlpha(fg, bg, req) {
+        for (let a = 0.01; a <= 1.0; a += 0.01) {
+            const blended = alphaBlend(fg, bg, a);
+            if (getContrastRatio(blended, bg) >= req) {
+                return parseFloat(a.toFixed(2));
+            }
+        }
+        return null;
+    }
 
     updateFontSizeOptions();
     updateUnitToggleButton();
