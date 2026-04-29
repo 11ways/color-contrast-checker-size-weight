@@ -1,7 +1,7 @@
 export default [
   {
     files: ["**/*.js"],
-    ignores: ["lib/**", "node_modules/**"],
+    ignores: ["lib/**", "node_modules/**", "dist/**"],
     languageOptions: {
       ecmaVersion: 2022,
       sourceType: "script",
@@ -11,6 +11,7 @@ export default [
         window: "readonly",
         console: "readonly",
         setTimeout: "readonly",
+        clearTimeout: "readonly",
         AudioContext: "readonly",
         webkitAudioContext: "readonly",
         navigator: "readonly",

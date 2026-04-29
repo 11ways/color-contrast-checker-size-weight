@@ -9,6 +9,7 @@
   "scripts": {
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "build": "rm -rf dist && mkdir -p dist/images dist/fonts dist/lib dist/icons && cp manifest.json background.js popup.html popup.js index.html dist/ && cp images/*.svg dist/images/ && cp fonts/*.woff2 dist/fonts/ && cp lib/coloris.min.* dist/lib/ && cp icons/*.png dist/icons/ && echo 'Extension built to dist/'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

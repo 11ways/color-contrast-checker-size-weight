@@ -83,6 +83,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    /* --- SANITIZE HELPER --- */
+    const sanitizeHex = (v) => /^#[0-9a-f]{3,8}$/i.test(v) ? v : '#000';
+    /* --- ICON HELPER --- */
+    const svgIcon = (id, extra = '') => `<svg class="icon"${extra}><use href="#icon-${id}"/></svg>`;
+
     /* --- HELPERS --- */
     const hexToRgb = (hex) => {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
@@ -147,17 +152,24 @@ document.addEventListener('DOMContentLoaded', () => {
         return passingHistory.some(h => `${rgbToHex(h.fg)}_${rgbToHex(h.bg)}_${h.isNonText}` === key);
     }
 
+    function saveHistory() {
+        if (chrome?.storage?.local) {
+            chrome.storage.local.set({ passingHistory });
+        }
+    }
+
     function addCombination(fg, bg, isNonText) {
         const key = `${rgbToHex(fg)}_${rgbToHex(bg)}_${isNonText}`;
         const index = passingHistory.findIndex(h => `${rgbToHex(h.fg)}_${rgbToHex(h.bg)}_${h.isNonText}` === key);
-        
+
         if (index > -1) {
             passingHistory.splice(index, 1);
         } else {
             passingHistory.unshift({ fg, bg, isNonText });
-            if (passingHistory.length > 30) passingHistory.pop(); 
+            if (passingHistory.length > 30) passingHistory.pop();
         }
-        
+
+        saveHistory();
         renderHistory();
         checkContrast(false);
     }
@@ -188,7 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             swatch.style.color = rgbToHex(fgFlat);
             
             if (item.isNonText) {
-                swatch.innerHTML = '<i class="fa-solid fa-check"></i>';
+                swatch.innerHTML = svgIcon('check');
             } else {
                 swatch.textContent = "PASS";
             }
@@ -201,17 +213,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             swatch.onclick = () => {
                 const combined = `${fgStr} on ${bgStr}`;
-                const ta = document.createElement("textarea");
-                ta.value = combined;
-                ta.style.position = "fixed";
-                ta.style.left = "-9999px";
-                document.body.appendChild(ta);
-                ta.select();
-                document.execCommand('copy');
-                document.body.removeChild(ta);
-
+                navigator.clipboard.writeText(combined).catch(() => {});
                 const originalContent = swatch.innerHTML;
-                swatch.innerHTML = '<i class="fa-solid fa-copy"></i>';
+                swatch.innerHTML = svgIcon('copy');
                 setTimeout(() => { swatch.innerHTML = originalContent; }, 1000);
             };
 
@@ -235,13 +239,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     soundToggleBtn.addEventListener('click', () => {
         soundEnabled = !soundEnabled;
-        const icon = soundToggleBtn.querySelector('i');
-        icon.className = soundEnabled ? 'fa-solid fa-volume-high' : 'fa-solid fa-volume-xmark';
+        soundToggleBtn.querySelector('svg use').setAttribute('href', soundEnabled ? '#icon-vol-high' : '#icon-vol-xmark');
         soundToggleBtn.setAttribute('data-tooltip', soundEnabled ? 'Mute sound feedback' : 'Enable sound feedback');
     });
 
     clearHistoryBtn.addEventListener('click', () => {
         passingHistory = [];
+        saveHistory();
         renderHistory();
         checkContrast(false);
     });
@@ -263,19 +267,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const copyToClipboard = (btn, text) => {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.left = "-9999px";
-        document.body.appendChild(ta);
-        ta.select();
-        document.execCommand('copy');
-        document.body.removeChild(ta);
-
-        const icon = btn.querySelector('i');
-        if (icon) {
-            icon.className = 'fa-solid fa-check';
-            setTimeout(() => { icon.className = 'fa-solid fa-copy'; }, 1500);
+        navigator.clipboard.writeText(text).catch(() => {});
+        const useEl = btn.querySelector('svg use');
+        if (useEl) {
+            useEl.setAttribute('href', '#icon-check');
+            setTimeout(() => { useEl.setAttribute('href', '#icon-copy'); }, 1500);
         }
     };
 
@@ -376,7 +372,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const bStyles = getBadgeStyles();
         if (isNonText) {
-            aaOverallStatusSpan.innerHTML = `<i class="fa-solid fa-${passes ? 'check' : 'xmark'}" style="font-size:${bStyles.size}; line-height:1;"></i>`;
+            aaOverallStatusSpan.innerHTML = svgIcon(passes ? 'check' : 'xmark', ` style="font-size:${bStyles.size}; line-height:1;"`);
         } else {
             aaOverallStatusSpan.textContent = passes ? 'PASS' : 'FAIL';
             aaOverallStatusSpan.style.fontSize = bStyles.size;
@@ -392,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const scNumber = isNonText ? "1.4.11" : "1.4.3";
             const scUrl = isNonText ? "https://www.w3.org/WAI/WCAG22/Understanding/non-text-contrast" : "https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html";
             const isFav = isCombinationStored(fgRaw, bgRgb, isNonText);
-            const favClass = isFav ? 'fa-solid' : 'fa-regular';
+            const favIcon = isFav ? 'star-solid' : 'star-regular';
             const fgStr = formatColor(fgRaw, activeUnit);
             const bgStr = formatColor(bgRgb, activeUnit);
             const comboStr = `${fgStr} on ${bgStr}`;
@@ -402,10 +398,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="padding-right: 64px;">Your contrast meets <a href="${scUrl}" target="_blank" style="color: inherit; text-decoration: underline;">WCAG SC${scNumber}</a>!</div>
                 <div class="success-btn-group">
                     <button id="success-fav-btn" class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations">
-                        <i class="${favClass} fa-star"></i>
+                        ${svgIcon(favIcon)}
                     </button>
                     <button id="success-copy-btn" class="copy-small-btn" type="button" data-tooltip="Copy ${comboStr}" aria-label="Copy ${comboStr}">
-                        <i class="fa-solid fa-copy"></i>
+                        ${svgIcon('copy')}
                     </button>
                 </div>
             `;
@@ -421,10 +417,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateSuggestions(fgRaw, bgRgb, needed, isNonText, isLarge, currentRatio) {
         suggestionsList.innerHTML = '';
         const activeUnit = units[currentUnitIndex];
-        const currentBgHex = bgPicker.value;
+        const currentBgHex = sanitizeHex(bgPicker.value);
         const currentBgActive = formatColor(bgRgb, activeUnit);
         const currentFrontActive = formatColor(fgRaw, activeUnit);
-        const currentFrontAlphaValidHex = rgbToHex(fgRaw); 
+        const currentFrontAlphaValidHex = sanitizeHex(rgbToHex(fgRaw)); 
         
         let count = 0;
 
@@ -440,30 +436,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const getBadgeHTML = (isPass, fg, bg, isEnlarged = false) => {
             const styles = getBadgeStyles(isEnlarged);
             if (isNonText) {
-                const icon = isPass ? 'check' : 'xmark';
-                return `<i class="fa-solid fa-${icon}" style="font-size:${styles.size}; line-height:1;"></i>`;
+                return svgIcon(isPass ? 'check' : 'xmark', ` style="font-size:${styles.size}; line-height:1;"`);
             }
             const label = isPass ? 'PASS' : 'FAIL';
             return `<span style="font-size:${styles.size}; font-weight:${styles.weight}; line-height:1;">${label}</span>`;
         };
 
         if (!isNonText && currentRatio >= 3.0 && currentRatio < 4.5) {
-            addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${currentBgHex}; padding: 0;"><i class="fa-solid fa-check" style="font-size:16px;"></i></div>
-                  <div style="flex-grow:1;"><div style="color:var(--text-secondary); font-weight:500;">Use this colour combination only for <b>graphics and User Interface components</b>, not for text on background.</div></div>`);
+            addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${currentBgHex}; padding: 0;">${svgIcon('check', ' style="font-size:16px;"')}</div>
+                  <div style="flex-grow:1;"><div style="color:var(--color-border-input); font-weight:500;">Use this colour combination only for <b>graphics and User Interface components</b>, not for text on background.</div></div>`);
         }
 
         if (!isNonText && !isLarge && currentRatio >= 3.0) {
             addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${currentBgHex}; padding: 0;">${getBadgeHTML(true, currentFrontAlphaValidHex, currentBgHex, true)}</div>
-                  <div style="flex-grow:1;"><div style="color:var(--text-secondary); font-weight:500;">Enlarge text: min 18.5px bold or 24px regular.</div>
-                  <div style="font-size:12px; color:var(--text-secondary);">Ratio: ${currentRatio.toFixed(2)} with Background ${currentBgActive}</div></div>`);
+                  <div style="flex-grow:1;"><div style="color:var(--color-border-input); font-weight:500;">Enlarge text: min 18.5px bold or 24px regular.</div>
+                  <div style="font-size:12px; color:var(--color-border-input);">Ratio: ${currentRatio.toFixed(2)} with Background ${currentBgActive}</div></div>`);
         }
 
         const setupSuggestionButtons = (el, fg, bg, isNonText, colorStr) => {
             const copyBtn = el.querySelector('.copy-small-btn');
             const favBtn = el.querySelector('.fav-btn');
-            const favIcon = favBtn.querySelector('i');
             const isFav = isCombinationStored(fg, bg, isNonText);
-            favIcon.className = isFav ? 'fa-solid fa-star' : 'fa-regular fa-star';
+            favBtn.querySelector('svg use').setAttribute('href', isFav ? '#icon-star-solid' : '#icon-star-regular');
             copyBtn.onclick = () => copyToClipboard(copyBtn, colorStr);
             favBtn.onclick = () => addCombination(fg, bg, isNonText);
         };
@@ -477,13 +471,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const el = addSuggestion(`<div class="status" style="color:${rgbToHex(colorObj)}; background-color:${currentBgHex};">${getBadgeHTML(true)}</div>
                     <div style="flex-grow:1; display:flex; flex-direction:column;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:var(--text-secondary);">Set <b>Front opacity</b> to <b style="font-family:monospace;">${Math.round(pA * 100)}%</b></span>
+                            <span style="color:var(--color-border-input);">Set <b>Front opacity</b> to <b style="font-family:monospace;">${Math.round(pA * 100)}%</b></span>
                             <div class="suggestion-btn-group">
-                                <button class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations"><i class="fa-regular fa-star"></i></button>
-                                <button class="copy-small-btn" type="button" data-tooltip="Copy ${colorStr}" aria-label="Copy ${colorStr}"><i class="fa-solid fa-copy"></i></button>
+                                <button class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations">${svgIcon('star-regular')}</button>
+                                <button class="copy-small-btn" type="button" data-tooltip="Copy ${colorStr}" aria-label="Copy ${colorStr}">${svgIcon('copy')}</button>
                             </div>
                         </div>
-                        <span style="font-size:12px; color:var(--text-secondary);">Ratio: ${needed.toFixed(2)} with Background ${currentBgActive}</span>
+                        <span style="font-size:12px; color:var(--color-border-input);">Ratio: ${needed.toFixed(2)} with Background ${currentBgActive}</span>
                     </div>`);
                 setupSuggestionButtons(el, colorObj, bgRgb, isNonText, colorStr);
             }
@@ -496,13 +490,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = addSuggestion(`<div class="status" style="color:${rgbToHex(colorObj)}; background-color:${currentBgHex};">${getBadgeHTML(true)}</div>
                 <div style="flex-grow:1; display:flex; flex-direction:column;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:var(--text-secondary);">Replace <b>Front</b> with <b style="font-family:monospace;">${colorStr}</b></span>
+                        <span style="color:var(--color-border-input);">Replace <b>Front</b> with <b style="font-family:monospace;">${colorStr}</b></span>
                         <div class="suggestion-btn-group">
-                            <button class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations"><i class="fa-regular fa-star"></i></button>
-                            <button class="copy-small-btn" type="button" data-tooltip="Copy ${colorStr}" aria-label="Copy ${colorStr}"><i class="fa-solid fa-copy"></i></button>
+                            <button class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations">${svgIcon('star-regular')}</button>
+                            <button class="copy-small-btn" type="button" data-tooltip="Copy ${colorStr}" aria-label="Copy ${colorStr}">${svgIcon('copy')}</button>
                         </div>
                     </div>
-                    <span style="font-size:12px; color:var(--text-secondary);">Ratio: ${sFg.ratio.toFixed(2)} with Background ${currentBgActive}</span>
+                    <span style="font-size:12px; color:var(--color-border-input);">Ratio: ${sFg.ratio.toFixed(2)} with Background ${currentBgActive}</span>
                 </div>`);
             setupSuggestionButtons(el, colorObj, bgRgb, isNonText, colorStr);
         }
@@ -513,13 +507,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${rgbToHex(sBg.rgb)};">${getBadgeHTML(true)}</div>
                 <div style="flex-grow:1; display:flex; flex-direction:column;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:var(--text-secondary);">Replace <b>Background</b> with <b style="font-family:monospace;">${colorStr}</b></span>
+                        <span style="color:var(--color-border-input);">Replace <b>Background</b> with <b style="font-family:monospace;">${colorStr}</b></span>
                         <div class="suggestion-btn-group">
-                            <button class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations"><i class="fa-regular fa-star"></i></button>
-                            <button class="copy-small-btn" type="button" data-tooltip="Copy ${colorStr}" aria-label="Copy ${colorStr}"><i class="fa-solid fa-copy"></i></button>
+                            <button class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations">${svgIcon('star-regular')}</button>
+                            <button class="copy-small-btn" type="button" data-tooltip="Copy ${colorStr}" aria-label="Copy ${colorStr}">${svgIcon('copy')}</button>
                         </div>
                     </div>
-                    <span style="font-size:12px; color:var(--text-secondary);">Ratio: ${sBg.ratio.toFixed(2)} with Front ${currentFrontActive}</span>
+                    <span style="font-size:12px; color:var(--color-border-input);">Ratio: ${sBg.ratio.toFixed(2)} with Front ${currentFrontActive}</span>
                 </div>`);
             setupSuggestionButtons(el, fgRaw, sBg.rgb, isNonText, colorStr);
         }
@@ -648,6 +642,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     updateFontSizeOptions();
     updateUnitToggleButton();
-    renderHistory();
-    triggerCheck(true); 
+
+    // Load persisted history, then render
+    if (chrome?.storage?.local) {
+        chrome.storage.local.get('passingHistory', (result) => {
+            if (result.passingHistory) passingHistory = result.passingHistory;
+            renderHistory();
+            triggerCheck(true);
+        });
+    } else {
+        renderHistory();
+        triggerCheck(true);
+    }
 });

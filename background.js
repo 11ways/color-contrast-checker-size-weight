@@ -1,11 +1,9 @@
-// Reset any previously cached sidePanel behavior so default_popup works.
-// This fixes Arc where setPanelBehavior persists but sidePanel doesn't render.
-if (chrome.sidePanel?.setPanelBehavior) {
-  chrome.sidePanel
-    .setPanelBehavior({ openPanelOnActionClick: false })
-    .catch(() => {});
-}
+// Detect Google Chrome via userAgentData.brands — Arc and other Chromium
+// browsers don't include "Google Chrome" in their brands list.
+const isGoogleChrome = navigator.userAgentData?.brands?.some(b => b.brand === 'Google Chrome');
 
-chrome.runtime.onInstalled.addListener(() => {
-  console.log("Colour Contrast Checker Pro installed.");
-});
+if (isGoogleChrome && chrome.sidePanel) {
+  // Chrome: open as side panel on icon click
+  chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true }).catch(() => {});
+}
+// Other browsers: default_popup from manifest.json handles it
