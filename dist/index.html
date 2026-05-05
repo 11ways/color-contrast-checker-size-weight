@@ -398,7 +398,7 @@
         .results-container {
             padding: 12px 16px; box-shadow: var(--shadow); margin-top: 16px;
             transition: border-color 0.2s ease; display: block !important;
-            background-color: var(--color-secondary) !important;
+            background-color: var(--color-surface);
             border-radius: var(--border-radius);
         }
 
@@ -513,6 +513,32 @@
             opacity: 1;
             visibility: visible;
             transform: translateX(-50%) translateY(-2px);
+        }
+
+        /* Anchor suggestion-row buttons' tooltips to the right edge so they don't clip the panel */
+        .suggestion .copy-small-btn::after,
+        .suggestion .fav-btn::after,
+        .success-btn-group .copy-small-btn::after,
+        .success-btn-group .fav-btn::after {
+            left: auto;
+            right: 0;
+            transform: none;
+        }
+        .suggestion .copy-small-btn:hover::after, .suggestion .copy-small-btn:focus-visible::after,
+        .suggestion .fav-btn:hover::after, .suggestion .fav-btn:focus-visible::after,
+        .success-btn-group .copy-small-btn:hover::after, .success-btn-group .copy-small-btn:focus-visible::after,
+        .success-btn-group .fav-btn:hover::after, .success-btn-group .fav-btn:focus-visible::after {
+            transform: translateY(-2px);
+        }
+
+        /* Keep the first history-swatch tooltip from clipping the panel's left edge */
+        .history-list .history-swatch:first-child::after {
+            left: 0;
+            transform: none;
+        }
+        .history-list .history-swatch:first-child:hover::after,
+        .history-list .history-swatch:first-child:focus-visible::after {
+            transform: translateY(-2px);
         }
 
         .empty-history-msg {
