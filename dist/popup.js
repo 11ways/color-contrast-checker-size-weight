@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const suggestionsList = document.getElementById('suggestions-list');
     const historyList = document.getElementById('history-list');
     const clearHistoryBtn = document.getElementById('clear-history-btn');
-    const unitToggleBtn = document.getElementById('unit-toggle-btn');
+    const unitToggleSelect = document.getElementById('unit-toggle-select');
     const soundToggleBtn = document.getElementById('sound-toggle-btn');
     const fgCopyBtn = document.getElementById('fg-copy-btn');
     const bgCopyBtn = document.getElementById('bg-copy-btn');
@@ -140,10 +140,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const updateUnitToggleButton = () => {
-        const nextIndex = (currentUnitIndex + 1) % units.length;
-        const nextUnit = units[nextIndex].toUpperCase();
-        unitToggleBtn.textContent = nextUnit;
-        renderHistory(); 
+        unitToggleSelect.value = units[currentUnitIndex];
+        renderHistory();
     };
 
     /* --- HISTORY LOGIC --- */
@@ -231,16 +229,19 @@ document.addEventListener('DOMContentLoaded', () => {
         el.addEventListener('input', () => triggerCheck(false));
     });
 
-    unitToggleBtn.addEventListener('click', () => {
-        currentUnitIndex = (currentUnitIndex + 1) % units.length;
+    unitToggleSelect.addEventListener('change', () => {
+        const idx = units.indexOf(unitToggleSelect.value);
+        currentUnitIndex = idx >= 0 ? idx : 0;
         updateUnitToggleButton();
-        triggerCheck(false); 
+        triggerCheck(false);
     });
 
     soundToggleBtn.addEventListener('click', () => {
         soundEnabled = !soundEnabled;
         soundToggleBtn.querySelector('svg use').setAttribute('href', soundEnabled ? '#icon-vol-high' : '#icon-vol-xmark');
         soundToggleBtn.setAttribute('data-tooltip', soundEnabled ? 'Mute sound feedback' : 'Enable sound feedback');
+        soundToggleBtn.setAttribute('aria-label', soundEnabled ? 'Turn sound feedback off' : 'Turn sound feedback on');
+        soundToggleBtn.setAttribute('aria-pressed', soundEnabled ? 'true' : 'false');
     });
 
     clearHistoryBtn.addEventListener('click', () => {
@@ -444,13 +445,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!isNonText && currentRatio >= 3.0 && currentRatio < 4.5) {
             addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${currentBgHex}; padding: 0;">${svgIcon('check', ' style="font-size:16px;"')}</div>
-                  <div style="flex-grow:1;"><div style="color:var(--color-border-input); font-weight:500;">Use this colour combination only for <b>graphics and User Interface components</b>, not for text on background.</div></div>`);
+                  <div style="flex-grow:1;"><div style="color:var(--color-text-subdued); font-weight:500;">Use this colour combination only for <b>graphics and User Interface components</b>, not for text on background.</div></div>`);
         }
 
         if (!isNonText && !isLarge && currentRatio >= 3.0) {
             addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${currentBgHex}; padding: 0;">${getBadgeHTML(true, currentFrontAlphaValidHex, currentBgHex, true)}</div>
-                  <div style="flex-grow:1;"><div style="color:var(--color-border-input); font-weight:500;">Enlarge text: min 18.5px bold or 24px regular.</div>
-                  <div style="font-size:12px; color:var(--color-border-input);">Ratio: ${currentRatio.toFixed(2)} with Background ${currentBgActive}</div></div>`);
+                  <div style="flex-grow:1;"><div style="color:var(--color-text-subdued); font-weight:500;">Enlarge text: min 18.5px bold or 24px regular.</div>
+                  <div style="font-size:12px; color:var(--color-text-subdued);">Ratio: ${currentRatio.toFixed(2)} with Background ${currentBgActive}</div></div>`);
         }
 
         const setupSuggestionButtons = (el, fg, bg, isNonText, colorStr) => {
@@ -471,13 +472,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const el = addSuggestion(`<div class="status" style="color:${rgbToHex(colorObj)}; background-color:${currentBgHex};">${getBadgeHTML(true)}</div>
                     <div style="flex-grow:1; display:flex; flex-direction:column;">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <span style="color:var(--color-border-input);">Set <b>Front opacity</b> to <b style="font-family:monospace;">${Math.round(pA * 100)}%</b></span>
+                            <span style="color:var(--color-text-subdued);">Set <b>Front opacity</b> to <b style="font-family:monospace;">${Math.round(pA * 100)}%</b></span>
                             <div class="suggestion-btn-group">
                                 <button class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations">${svgIcon('star-regular')}</button>
                                 <button class="copy-small-btn" type="button" data-tooltip="Copy ${colorStr}" aria-label="Copy ${colorStr}">${svgIcon('copy')}</button>
                             </div>
                         </div>
-                        <span style="font-size:12px; color:var(--color-border-input);">Ratio: ${needed.toFixed(2)} with Background ${currentBgActive}</span>
+                        <span style="font-size:12px; color:var(--color-text-subdued);">Ratio: ${needed.toFixed(2)} with Background ${currentBgActive}</span>
                     </div>`);
                 setupSuggestionButtons(el, colorObj, bgRgb, isNonText, colorStr);
             }
@@ -490,13 +491,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = addSuggestion(`<div class="status" style="color:${rgbToHex(colorObj)}; background-color:${currentBgHex};">${getBadgeHTML(true)}</div>
                 <div style="flex-grow:1; display:flex; flex-direction:column;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:var(--color-border-input);">Replace <b>Front</b> with <b style="font-family:monospace;">${colorStr}</b></span>
+                        <span style="color:var(--color-text-subdued);">Replace <b>Front</b> with <b style="font-family:monospace;">${colorStr}</b></span>
                         <div class="suggestion-btn-group">
                             <button class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations">${svgIcon('star-regular')}</button>
                             <button class="copy-small-btn" type="button" data-tooltip="Copy ${colorStr}" aria-label="Copy ${colorStr}">${svgIcon('copy')}</button>
                         </div>
                     </div>
-                    <span style="font-size:12px; color:var(--color-border-input);">Ratio: ${sFg.ratio.toFixed(2)} with Background ${currentBgActive}</span>
+                    <span style="font-size:12px; color:var(--color-text-subdued);">Ratio: ${sFg.ratio.toFixed(2)} with Background ${currentBgActive}</span>
                 </div>`);
             setupSuggestionButtons(el, colorObj, bgRgb, isNonText, colorStr);
         }
@@ -507,13 +508,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const el = addSuggestion(`<div class="status" style="color:${currentFrontAlphaValidHex}; background-color:${rgbToHex(sBg.rgb)};">${getBadgeHTML(true)}</div>
                 <div style="flex-grow:1; display:flex; flex-direction:column;">
                     <div style="display:flex; justify-content:space-between; align-items:center;">
-                        <span style="color:var(--color-border-input);">Replace <b>Background</b> with <b style="font-family:monospace;">${colorStr}</b></span>
+                        <span style="color:var(--color-text-subdued);">Replace <b>Background</b> with <b style="font-family:monospace;">${colorStr}</b></span>
                         <div class="suggestion-btn-group">
                             <button class="fav-btn" type="button" data-tooltip="Store as favourite" aria-label="Add to stored combinations">${svgIcon('star-regular')}</button>
                             <button class="copy-small-btn" type="button" data-tooltip="Copy ${colorStr}" aria-label="Copy ${colorStr}">${svgIcon('copy')}</button>
                         </div>
                     </div>
-                    <span style="font-size:12px; color:var(--color-border-input);">Ratio: ${sBg.ratio.toFixed(2)} with Front ${currentFrontActive}</span>
+                    <span style="font-size:12px; color:var(--color-text-subdued);">Ratio: ${sBg.ratio.toFixed(2)} with Front ${currentFrontActive}</span>
                 </div>`);
             setupSuggestionButtons(el, fgRaw, sBg.rgb, isNonText, colorStr);
         }

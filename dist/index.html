@@ -57,6 +57,7 @@
             --color-tertiary: #D9D9D9;
             --color-border: #D9D9D9;
             --color-border-input: #949494;
+            --color-text-subdued: #555555;
             --color-error: #B30000;
 
             --pass-color: #00784d;
@@ -250,9 +251,9 @@
 
         .unit-toggle-btn {
             background: var(--color-primary);
-            border: none;
+            border: 1px solid var(--color-primary);
             border-radius: var(--border-radius);
-            padding: 5px 10px;
+            padding: 5px 24px 5px 10px;
             font-size: 10px;
             font-weight: 700;
             color: var(--color-surface);
@@ -260,9 +261,18 @@
             text-transform: uppercase;
             transition: background-color 0.2s;
             line-height: 1;
+            font-family: var(--font-family-body);
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='%23ffffff'><path d='M6 8 0 0h12z'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 8px 6px;
         }
         .unit-toggle-btn:hover {
             background-color: var(--color-primary-dark);
+            border-color: var(--color-primary-dark);
         }
 
         /* --- INPUTS --- */
@@ -366,7 +376,7 @@
         /* --- BUTTONS --- */
         .copy-main-btn {
             width: 32px; height: 34px; border: 1px solid var(--color-border); border-radius: var(--border-radius);
-            background: var(--color-surface); color: var(--color-border-input); cursor: pointer;
+            background: var(--color-surface); color: var(--color-text-subdued); cursor: pointer;
             display: flex; align-items: center; justify-content: center; font-size: 14px;
             box-shadow: var(--shadow); transition: all 0.2s;
         }
@@ -378,7 +388,7 @@
 
         .copy-small-btn, .fav-btn {
             width: 28px; height: 28px; border: 1px solid var(--color-border); border-radius: var(--border-radius);
-            background: var(--color-surface); color: var(--color-border-input); cursor: pointer;
+            background: var(--color-surface); color: var(--color-text-subdued); cursor: pointer;
             display: flex; align-items: center; justify-content: center; font-size: 12px;
             box-shadow: var(--shadow); transition: all 0.2s;
         }
@@ -444,7 +454,7 @@
 
         .no-suggestions-message {
             background: var(--color-surface); padding: 12px; border-radius: var(--border-radius); border: 1px dashed var(--color-border);
-            color: var(--color-border-input); font-size: 13px; line-height: 1.4;
+            color: var(--color-text-subdued); font-size: 13px; line-height: 1.4;
         }
 
         /* --- HISTORY --- */
@@ -506,7 +516,7 @@
         }
 
         .empty-history-msg {
-            font-size: 13px; color: var(--color-border-input); font-style: italic; padding: 8px 0;
+            font-size: 13px; color: var(--color-text-subdued); padding: 8px 0;
         }
 
         .clear-history-btn {
@@ -527,7 +537,7 @@
         /* --- FOOTER --- */
         footer {
             text-align: center; padding: 16px; border-top: 1px solid var(--color-border);
-            font-size: 12px; color: var(--color-border-input);
+            font-size: 12px; color: var(--color-text-subdued);
         }
         footer a { color: var(--color-primary); text-decoration: underline; }
         footer a:hover, footer a:focus-visible {
@@ -558,8 +568,8 @@
 <main>
     <div class="header-container">
         <h1>Elly Contrast Checker</h1>
-        <button type="button" id="sound-toggle-btn" class="header-sound-btn" data-tooltip="Enable sound feedback">
-            <svg class="icon"><use href="#icon-vol-xmark"/></svg>
+        <button type="button" id="sound-toggle-btn" class="header-sound-btn" aria-pressed="false" aria-label="Turn sound feedback on" data-tooltip="Enable sound feedback">
+            <svg class="icon" aria-hidden="true"><use href="#icon-vol-xmark"/></svg>
         </button>
     </div>
 
@@ -653,7 +663,12 @@
     <div class="suggestions-container">
         <div class="suggestions-header">
             <h2>Follow any of the suggestions below</h2>
-            <button type="button" id="unit-toggle-btn" class="unit-toggle-btn">RGB</button>
+            <label for="unit-toggle-select" class="sr-only">Unit</label>
+            <select id="unit-toggle-select" class="unit-toggle-btn">
+                <option value="hex">HEX</option>
+                <option value="rgb">RGB</option>
+                <option value="hsl">HSL</option>
+            </select>
         </div>
         <div id="suggestions-list" style="display: contents;"></div>
     </div>
